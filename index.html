@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio — Your Name</title>
+
+  <!-- Google Fonts: Bebas Neue (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       CSS CUSTOM PROPERTIES — edit colours here
+       ============================================================ */
+    :root {
+      --bg:           #0d1117;
+      --surface:      #161b22;
+      --surface-hi:   #1c2333;
+      --border:       #2a3144;
+      --accent:       #58a6ff;   /* muted blue accent */
+      --accent-dim:   rgba(88,166,255,.12);
+      --text:         #e6edf3;
+      --text-muted:   #7d8b9a;
+      --text-faint:   #3d4f63;
+      --gold:         #d4a843;
+      --silver:       #9ca3af;
+      --edit-glow:    rgba(88,166,255,.35);
+
+      --font-display: 'Bebas Neue', 'Arial Black', sans-serif;
+      --font-body:    'DM Sans', 'Segoe UI', sans-serif;
+
+      --radius:  10px;
+      --radius-sm: 6px;
+      --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ============================================================
+       RESET
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ============================================================
+       NOISE TEXTURE OVERLAY
+       ============================================================ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.022;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ============================================================
+       TOP BAR
+       ============================================================ */
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 40px;
+      background: rgba(13,17,23,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-bar__logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      letter-spacing: .08em;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    /* Admin button (top-right) */
+    .admin-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: .75rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+    }
+    .admin-toggle-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Admin login panel (hidden by default) */
+    .admin-panel {
+      position: absolute; top: calc(100% + 8px); right: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 260px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.6);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .admin-panel.visible { display: flex; }
+
+    .admin-panel label {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .admin-panel input[type="password"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: .9rem;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    .admin-panel input[type="password"]:focus { border-color: var(--accent); }
+
+    .admin-panel button {
+      background: var(--accent);
+      border: none;
+      color: #0d1117;
+      font-family: var(--font-body);
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: opacity var(--transition);
+    }
+    .admin-panel button:hover { opacity: .85; }
+
+    .admin-panel .error-msg {
+      font-size: .75rem;
+      color: #f85149;
+      display: none;
+    }
+    .admin-panel .error-msg.visible { display: block; }
+
+    /* Edit-mode status bar */
+    .edit-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--accent-dim);
+      border-bottom: 1px solid var(--accent);
+      padding: 10px 40px;
+      font-size: .8rem;
+      color: var(--accent);
+      gap: 16px;
+    }
+    .edit-bar.visible { display: flex; }
+    .edit-bar strong { font-weight: 700; }
+
+    .edit-bar .save-note {
+      background: var(--surface-hi);
+      border: 1px dashed var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 6px 14px;
+      font-size: .72rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .edit-bar .save-note em { color: var(--accent); font-style: normal; }
+
+    .edit-bar .exit-btn {
+      background: transparent;
+      border: 1px solid var(--text-faint);
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+    }
+    .edit-bar .exit-btn:hover { border-color: #f85149; color: #f85149; }
+
+    /* ============================================================
+       HERO / HEADER
+       ============================================================ */
+    .hero {
+      padding: 80px 40px 60px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero__eyebrow {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .hero__name {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 10vw, 9rem);
+      line-height: .92;
+      letter-spacing: .02em;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    .hero__name span {
+      display: block;
+      color: var(--text-muted);
+      font-size: .55em;
+      letter-spacing: .04em;
+    }
+
+    .hero__divider {
+      width: 60px;
+      height: 3px;
+      background: var(--accent);
+      border: none;
+      margin-bottom: 20px;
+    }
+
+    .hero__tagline {
+      max-width: 500px;
+      color: var(--text-muted);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* contenteditable styling in edit mode */
+    [contenteditable="true"] {
+      outline: none;
+      border-radius: 4px;
+      transition: box-shadow var(--transition);
+      cursor: text;
+    }
+    body.edit-mode [contenteditable="true"] {
+      box-shadow: 0 0 0 2px var(--edit-glow);
+      background: rgba(88,166,255,.04);
+    }
+
+    /* ============================================================
+       TWO-COLUMN LAYOUT
+       ============================================================ */
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+
+    @media (max-width: 768px) {
+      .top-bar { padding: 12px 20px; }
+      .admin-panel { right: 20px; }
+      .hero { padding: 50px 20px 40px; }
+      .columns { grid-template-columns: 1fr; padding: 0 20px 60px; gap: 0; }
+      .edit-bar { padding: 10px 20px; flex-wrap: wrap; }
+    }
+
+    /* ============================================================
+       COLUMN PANELS
+       ============================================================ */
+    .col-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px 36px;
+    }
+
+    .col-panel:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .col-panel:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+
+    @media (max-width: 768px) {
+      .col-panel:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+      .col-panel:last-child  { border-radius: 0 0 var(--radius) var(--radius); border-top: none; }
+    }
+
+    /* Column heading */
+    .col-panel__label {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 6px;
+    }
+
+    .col-panel__title {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      letter-spacing: .04em;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Medal / icon dot next to column title */
+    .col-panel--intellectual .col-panel__title::before {
+      content: '◈';
+      color: var(--silver);
+      margin-right: 10px;
+    }
+    .col-panel--athletic .col-panel__title::before {
+      content: '◆';
+      color: var(--gold);
+      margin-right: 10px;
+    }
+
+    /* ============================================================
+       ACHIEVEMENT CARDS
+       ============================================================ */
+    .achievements { display: flex; flex-direction: column; gap: 16px; }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+      transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--border);
+      transition: background var(--transition);
+    }
+
+    .col-panel--intellectual .card::before { background: var(--silver); opacity: .35; }
+    .col-panel--athletic    .card::before { background: var(--gold);   opacity: .35; }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateX(3px);
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    }
+    .col-panel--intellectual .card:hover::before { background: var(--silver); opacity: 1; }
+    .col-panel--athletic    .card:hover::before { background: var(--gold);   opacity: 1; }
+
+    .card__badge {
+      display: inline-block;
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-bottom: 8px;
+    }
+    .col-panel--intellectual .card__badge {
+      background: rgba(156,163,175,.1);
+      color: var(--silver);
+      border: 1px solid rgba(156,163,175,.2);
+    }
+    .col-panel--athletic .card__badge {
+      background: rgba(212,168,67,.1);
+      color: var(--gold);
+      border: 1px solid rgba(212,168,67,.2);
+    }
+
+    .card__title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: .04em;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .card__desc {
+      font-size: .85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    /* Attachment link */
+    .card__attachment {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(88,166,255,.25);
+      border-radius: var(--radius-sm);
+      padding: 5px 12px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .card__attachment:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Paperclip SVG icon */
+    .card__attachment svg {
+      width: 12px; height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* Add-achievement button (edit mode only) */
+    .add-card-btn {
+      display: none;
+      width: 100%;
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--text-faint);
+      font-family: var(--font-body);
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+      margin-top: 8px;
+    }
+    .add-card-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    body.edit-mode .add-card-btn { display: block; }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    footer {
+      text-align: center;
+      padding: 30px 40px;
+      font-size: .72rem;
+      color: var(--text-faint);
+      border-top: 1px solid var(--border);
+      letter-spacing: .06em;
+    }
+    footer span { color: var(--text-muted); }
+
+  </style>
+</head>
+<body>
+
+  <!-- ======================================================
+       TOP BAR
+  ====================================================== -->
+  <header class="top-bar">
+    <div class="top-bar__logo">Portfolio</div>
+
+    <div style="position:relative;">
+      <!-- ▶ ADMIN BUTTON — visible in top-right corner -->
+      <button class="admin-toggle-btn" id="adminToggle" aria-label="Admin Login">⚙ Admin</button>
+
+      <!-- Admin login panel (dropdown) -->
+      <div class="admin-panel" id="adminPanel" role="dialog" aria-label="Admin Login">
+        <label for="adminPassword">Admin Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter password…" autocomplete="current-password" />
+        <div class="error-msg" id="errorMsg">Incorrect password. Try again.</div>
+        <button id="adminLoginBtn">Unlock Edit Mode</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Edit-mode status bar -->
+  <div class="edit-bar" id="editBar">
+    <div>
+      <strong>✏ Edit Mode Active</strong>
+      &nbsp;— click any text to edit it directly.
+    </div>
+    <div class="save-note">
+      ⚠ Static site: <em>copy the page source</em> back into your
+      <code>index.html</code> in VS Code / your editor to save changes permanently.
+    </div>
+    <button class="exit-btn" id="exitEditBtn">Exit Edit Mode</button>
+  </div>
+
+  <!-- ======================================================
+       HERO
+  ====================================================== -->
+  <section class="hero">
+    <p class="hero__eyebrow">Personal Portfolio</p>
+
+    <!-- ▶ CHANGE YOUR NAME HERE — also editable in Admin edit mode -->
+    <h1 class="hero__name" id="heroName" contenteditable="false" spellcheck="false">
+      YOUR NAME
+      <span id="heroSubtitle" contenteditable="false" spellcheck="false">Student · Athlete · Scholar</span>
+    </h1>
+
+    <hr class="hero__divider" />
+
+    <!-- ▶ CHANGE YOUR TAGLINE HERE -->
+    <p class="hero__tagline" id="heroTagline" contenteditable="false" spellcheck="false">
+      A brief introduction about yourself — your passions, goals,
+      and what drives you both intellectually and athletically.
+    </p>
+  </section>
+
+  <!-- ======================================================
+       TWO-COLUMN LAYOUT
+  ====================================================== -->
+  <main class="columns">
+
+    <!-- ─────────────────────────────────────────────
+         LEFT COLUMN — INTELLECTUAL ACHIEVEMENTS
+    ───────────────────────────────────────────── -->
+    <div class="col-panel col-panel--intellectual">
+      <p class="col-panel__label">Section I</p>
+      <h2 class="col-panel__title">Intellectual Achievements</h2>
+
+      <div class="achievements" id="intellectual-list">
+
+        <!-- ACHIEVEMENT CARD — duplicate this block to add more -->
+        <article class="card">
+          <span class="card__badge">Academic</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            National Science Olympiad — Gold Medal
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Placed 1st nationally in the Biology category at the Science Olympiad
+            invitational, competing against 120 teams across 14 states.
+          </p>
+          <!--
+            ▶ TO LINK A FILE: Replace "#" with the path to your file in your
+              GitHub repo, e.g. "assets/certificates/science-olympiad.pdf"
+              or a full URL to a Google Drive PDF.
+          -->
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Certificate
+          </a>
+        </article>
+
+        <article class="card">
+          <span class="card__badge">Research</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            Published Research — Journal of Student Science
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Co-authored a peer-reviewed paper on urban microplastic concentration
+            in freshwater ecosystems, published in 2024.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Paper
+          </a>
+        </article>
+
+        <article class="card">
+          <span class="card__badge">Competition</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            USAMO Qualifier — Top 500 Nationally
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Qualified for the USA Mathematical Olympiad, ranking in the top 500
+            students nationwide in the AMC/AIME pipeline.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Score Report
+          </a>
+        </article>
+
+      </div><!-- /intellectual-list -->
+
+      <!-- Appears only in edit mode -->
+      <button class="add-card-btn" data-target="intellectual-list" data-type="intellectual">
+        + Add Achievement
+      </button>
+    </div><!-- /col-panel--intellectual -->
+
+
+    <!-- ─────────────────────────────────────────────
+         RIGHT COLUMN — ATHLETIC ACHIEVEMENTS
+    ───────────────────────────────────────────── -->
+    <div class="col-panel col-panel--athletic">
+      <p class="col-panel__label">Section II</p>
+      <h2 class="col-panel__title">Athletic Achievements</h2>
+
+      <div class="achievements" id="athletic-list">
+
+        <article class="card">
+          <span class="card__badge">State</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            State Championship — 400m Hurdles
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Won the State Championships in the 400m hurdles event with a
+            personal best of 52.4 seconds, breaking the school record.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Results
+          </a>
+        </article>
+
+        <article class="card">
+          <span class="card__badge">Team</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            Varsity Captain — Basketball Team
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Led the varsity basketball team as captain, guiding the squad to a
+            24–3 season record and regional semifinal appearance.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Season Stats
+          </a>
+        </article>
+
+        <article class="card">
+          <span class="card__badge">Award</span>
+          <h3 class="card__title" contenteditable="false" spellcheck="false">
+            All-District MVP Award — Football
+          </h3>
+          <p class="card__desc" contenteditable="false" spellcheck="false">
+            Named All-District Most Valuable Player for two consecutive seasons,
+            recognized for both offensive output and leadership.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Award
+          </a>
+        </article>
+
+      </div><!-- /athletic-list -->
+
+      <button class="add-card-btn" data-target="athletic-list" data-type="athletic">
+        + Add Achievement
+      </button>
+    </div><!-- /col-panel--athletic -->
+
+  </main>
+
+  <!-- ======================================================
+       FOOTER
+  ====================================================== -->
+  <footer>
+    <span id="footerName" contenteditable="false" spellcheck="false">YOUR NAME</span>
+    &nbsp;·&nbsp; Built with HTML / CSS / JS &nbsp;·&nbsp; Hosted on GitHub Pages
+  </footer>
+
+
+  <!-- ======================================================
+       JAVASCRIPT
+  ====================================================== -->
+  <script>
+    /* ============================================================
+       ▶ CHANGE YOUR ADMIN PASSWORD HERE
+       ============================================================ */
+    const ADMIN_PASSWORD = 'admin123';
+    /* ============================================================ */
+
+    /* —— DOM references —— */
+    const adminToggle  = document.getElementById('adminToggle');
+    const adminPanel   = document.getElementById('adminPanel');
+    const adminPassIn  = document.getElementById('adminPassword');
+    const adminLoginBtn= document.getElementById('adminLoginBtn');
+    const errorMsg     = document.getElementById('errorMsg');
+    const editBar      = document.getElementById('editBar');
+    const exitEditBtn  = document.getElementById('exitEditBtn');
+
+    let editMode = false;
+
+    /* —— Toggle admin panel open/close —— */
+    adminToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      adminPanel.classList.toggle('visible');
+      if (adminPanel.classList.contains('visible')) {
+        setTimeout(() => adminPassIn.focus(), 50);
+      }
+    });
+
+    /* Close panel if clicking outside */
+    document.addEventListener('click', (e) => {
+      if (!adminPanel.contains(e.target) && e.target !== adminToggle) {
+        adminPanel.classList.remove('visible');
+        errorMsg.classList.remove('visible');
+        adminPassIn.value = '';
+      }
+    });
+
+    /* Allow pressing Enter in password field */
+    adminPassIn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') adminLoginBtn.click();
+    });
+
+    /* —— Login / unlock —— */
+    adminLoginBtn.addEventListener('click', () => {
+      if (adminPassIn.value === ADMIN_PASSWORD) {
+        enableEditMode();
+        adminPanel.classList.remove('visible');
+        adminPassIn.value = '';
+        errorMsg.classList.remove('visible');
+      } else {
+        errorMsg.classList.add('visible');
+        adminPassIn.focus();
+        adminPassIn.select();
+      }
+    });
+
+    /* —— Exit edit mode —— */
+    exitEditBtn.addEventListener('click', disableEditMode);
+
+    /* —— Enable edit mode —— */
+    function enableEditMode() {
+      editMode = true;
+      document.body.classList.add('edit-mode');
+      editBar.classList.add('visible');
+
+      /* Make all editable elements active */
+      document.querySelectorAll('[contenteditable]').forEach(el => {
+        el.contentEditable = 'true';
+      });
+    }
+
+    /* —— Disable edit mode —— */
+    function disableEditMode() {
+      editMode = false;
+      document.body.classList.remove('edit-mode');
+      editBar.classList.remove('visible');
+
+      document.querySelectorAll('[contenteditable]').forEach(el => {
+        el.contentEditable = 'false';
+      });
+    }
+
+    /* —— Add new achievement card (edit mode) ——
+         ▶ HOW TO FORMAT FILE PATHS:
+           For files in your GitHub repo:  "assets/certificates/my-cert.pdf"
+           For absolute URLs:              "https://drive.google.com/file/d/…"
+    */
+    document.querySelectorAll('.add-card-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const listId  = btn.dataset.target;
+        const type    = btn.dataset.type;  /* 'intellectual' or 'athletic' */
+        const list    = document.getElementById(listId);
+        const badge   = type === 'athletic' ? 'Athletic' : 'Academic';
+
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <span class="card__badge">${badge}</span>
+          <h3 class="card__title" contenteditable="true" spellcheck="false">
+            New Achievement Title
+          </h3>
+          <p class="card__desc" contenteditable="true" spellcheck="false">
+            Describe this achievement here.
+          </p>
+          <a class="card__attachment" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            View Attachment
+          </a>
+        `;
+
+        list.appendChild(card);
+
+        /* Focus the title immediately */
+        const title = card.querySelector('.card__title');
+        title.focus();
+
+        /* Select all text for easy replacement */
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
+    });
+
+    /* —— Subtle entrance animation —— */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0) translateX(0)';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.card').forEach((card, i) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(18px)';
+      card.style.transition = `opacity .5s ease ${i * 0.07}s, transform .5s ease ${i * 0.07}s, border-color .2s ease, box-shadow .2s ease`;
+      observer.observe(card);
+    });
+  </script>
+
+</body>
+</html>
